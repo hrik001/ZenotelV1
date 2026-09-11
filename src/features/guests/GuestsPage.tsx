@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGuestsData } from './useGuestsData';
 import { Card, CardContent } from '../../components/ui/Card';
@@ -11,6 +11,17 @@ import { formatCurrency, formatDate } from '../../lib/formatters';
 export function GuestsPage() {
   const { guests, isLoading } = useGuestsData();
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredGuests = useMemo(() => {
+    if (!searchTerm.trim()) return guests;
+    const lowerSearch = searchTerm.toLowerCase();
+    return guests.filter(g => 
+      g.name.toLowerCase().includes(lowerSearch) || 
+      (g.email && g.email.toLowerCase().includes(lowerSearch)) ||
+      (g.phone && g.phone.toLowerCase().includes(lowerSearch))
+    );
+  }, [guests, searchTerm]);
 
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto h-full flex flex-col">
@@ -29,7 +40,12 @@ export function GuestsPage() {
         <div className="p-4 border-b border-stone-200 flex items-center">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-            <Input className="pl-9" placeholder="Search guests by name or email..." />
+            <Input 
+              className="pl-9" 
+              placeholder="Search guests by name, email, or phone..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
         
@@ -45,6 +61,11 @@ export function GuestsPage() {
               <p className="text-stone-500 mt-1 mb-4">You haven't added any guests yet.</p>
               <Button onClick={() => navigate('/guests/new')}>Add your first guest</Button>
             </div>
+          ) : filteredGuests.length === 0 ? (
+             <div className="h-64 flex flex-col items-center justify-center text-center p-8">
+              <h3 className="text-lg font-medium text-stone-900">No matching guests</h3>
+              <p className="text-stone-500 mt-1 mb-4">Try adjusting your search criteria.</p>
+            </div>
           ) : (
             <Table>
               <TableHeader className="bg-stone-50 sticky top-0 z-10 shadow-sm">
@@ -58,7 +79,7 @@ export function GuestsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {guests.map((guest) => (
+                {filteredGuests.map((guest) => (
                   <TableRow key={guest.id} className="cursor-pointer hover:bg-stone-50" onClick={() => navigate(`/guests/${guest.id}`)}>
                     <TableCell className="font-medium text-stone-900">
                       {guest.name}

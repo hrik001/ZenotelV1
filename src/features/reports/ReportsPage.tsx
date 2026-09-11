@@ -2,25 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { useOutletContext } from 'react-router-dom';
 import { Organization } from '../../types';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-
-const mockRevenueData = [
-  { name: 'Jan', value: 4000 },
-  { name: 'Feb', value: 3000 },
-  { name: 'Mar', value: 5000 },
-  { name: 'Apr', value: 4500 },
-  { name: 'May', value: 6000 },
-  { name: 'Jun', value: 7200 },
-];
-
-const mockOccupancyData = [
-  { name: 'Jan', rate: 65 },
-  { name: 'Feb', rate: 59 },
-  { name: 'Mar', rate: 80 },
-  { name: 'Apr', rate: 81 },
-  { name: 'May', rate: 86 },
-  { name: 'Jun', rate: 92 },
-];
+import { BarChart3 } from 'lucide-react';
 
 export function ReportsPage() {
   const { activeOrg } = useOutletContext<{ activeOrg: Organization }>();
@@ -39,25 +21,10 @@ export function ReportsPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Gross Revenue (YTD)</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 min-h-0 pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={mockRevenueData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#78716c' }} dy={10} />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 12, fill: '#78716c' }} 
-                  tickFormatter={(val) => `$${val}`}
-                />
-                <Tooltip 
-                  cursor={{ fill: '#f5f5f4' }}
-                  contentStyle={{ borderRadius: '8px', border: '1px solid #e7e5e4', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: number) => [`$${value}`, 'Revenue']}
-                />
-                <Bar dataKey="value" fill="#0d9488" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="flex-1 min-h-0 pt-4 flex flex-col items-center justify-center text-center">
+             <BarChart3 className="w-12 h-12 text-stone-300 mb-4" />
+             <h3 className="text-lg font-medium text-stone-900">Not enough data yet</h3>
+             <p className="text-stone-500 max-w-xs mt-1">As you start receiving payments and bookings, your revenue charts will appear here.</p>
           </CardContent>
         </Card>
 
@@ -65,25 +32,10 @@ export function ReportsPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Occupancy Rate (%)</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 min-h-0 pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={mockOccupancyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#78716c' }} dy={10} />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 12, fill: '#78716c' }} 
-                  domain={[0, 100]}
-                  tickFormatter={(val) => `${val}%`}
-                />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: '1px solid #e7e5e4', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: number) => [`${value}%`, 'Occupancy']}
-                />
-                <Line type="monotone" dataKey="rate" stroke="#0284c7" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
+          <CardContent className="flex-1 min-h-0 pt-4 flex flex-col items-center justify-center text-center">
+             <BarChart3 className="w-12 h-12 text-stone-300 mb-4" />
+             <h3 className="text-lg font-medium text-stone-900">Not enough data yet</h3>
+             <p className="text-stone-500 max-w-xs mt-1">Your occupancy rate trends will be visualized here once you have active unit bookings.</p>
           </CardContent>
         </Card>
       </div>

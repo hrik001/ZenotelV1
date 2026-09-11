@@ -13,7 +13,7 @@ function PaymentStatusBadge({ status }: { status: string }) {
     case 'Completed': return <Badge variant="success">{status}</Badge>;
     case 'Pending': return <Badge variant="warning">{status}</Badge>;
     case 'Refunded': return <Badge variant="secondary">{status}</Badge>;
-    case 'Failed': return <Badge variant="destructive">{status}</Badge>;
+    case 'Failed': return <Badge variant="danger">{status}</Badge>;
     default: return <Badge>{status}</Badge>;
   }
 }
@@ -70,7 +70,7 @@ export function PaymentsPage() {
                       {formatDate(payment.date)}
                     </TableCell>
                     <TableCell className="font-medium text-stone-900 font-mono text-sm">
-                      {payment.reference || '-'}
+                      {payment.id.substring(0, 8)}
                     </TableCell>
                     <TableCell>
                       {payment.booking_id ? (
@@ -86,7 +86,7 @@ export function PaymentsPage() {
                       {payment.property?.name || 'Unknown'}
                     </TableCell>
                     <TableCell className="text-stone-600">
-                      {payment.payment_method}
+                      {payment.method}
                     </TableCell>
                     <TableCell className="font-medium text-stone-900">
                       {formatCurrency(payment.amount)}

@@ -63,7 +63,7 @@ export function OnboardingFlow() {
             <div className="mx-auto bg-teal-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
               <Building2 className="w-8 h-8 text-teal-700" />
             </div>
-            <h1 className="text-3xl font-bold text-stone-900">Welcome to Bookzee</h1>
+            <h1 className="text-3xl font-bold text-stone-900">Welcome to Zenotel</h1>
             <p className="text-stone-500 text-lg max-w-sm mx-auto pb-4">
               Let's set up your hospitality business. It only takes a few minutes.
             </p>

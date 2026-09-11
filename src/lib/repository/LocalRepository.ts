@@ -2,7 +2,7 @@ import { Booking, Guest, Organization, OrganizationMember, Payment, Property, Un
 import { generateId } from '../utils';
 import { IRepository } from './IRepository';
 
-const STORAGE_KEY = 'bookzee_db_v1';
+const STORAGE_KEY = 'zenotel_db_v1';
 
 interface DB {
   users: User[];
@@ -37,7 +37,7 @@ const seedDb = (db: DB) => {
   const guestId = 'guest_demo123';
   const bookingId = 'bk_demo123';
 
-  db.users.push({ id: userId, email: 'demo@bookzee.com', name: 'Demo User', created_at: new Date().toISOString() });
+  db.users.push({ id: userId, email: 'demo@zenotel.com', name: 'Demo User', created_at: new Date().toISOString() });
   
   db.organizations.push({
     id: orgId,

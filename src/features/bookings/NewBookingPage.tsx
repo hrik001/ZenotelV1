@@ -18,15 +18,15 @@ const bookingSchema = z.object({
   guest_id: z.string().min(1, 'Guest is required'),
   check_in: z.string().min(1, 'Check-in date is required'),
   check_out: z.string().min(1, 'Check-out date is required'),
-  guests_count: z.coerce.number().min(1, 'At least 1 guest required'),
-  base_amount: z.coerce.number().min(0, 'Amount must be positive'),
-  tax_amount: z.coerce.number().min(0, 'Tax must be positive'),
+  guests_count: z.union([z.string(), z.number()]).transform(Number).refine(val => val >= 1, 'At least 1 guest required'),
+  base_amount: z.union([z.string(), z.number()]).transform(Number).refine(val => val >= 0, 'Amount must be positive'),
+  tax_amount: z.union([z.string(), z.number()]).transform(Number).refine(val => val >= 0, 'Tax must be positive'),
 }).refine(data => new Date(data.check_out) > new Date(data.check_in), {
   message: "Check-out must be after check-in",
   path: ["check_out"]
 });
 
-type BookingFormValues = z.infer<typeof bookingSchema>;
+type BookingFormValues = z.input<typeof bookingSchema>;
 
 export function NewBookingPage() {
   const navigate = useNavigate();
@@ -62,7 +62,7 @@ export function NewBookingPage() {
     }
   }, [selectedPropertyId]);
 
-  const onSubmit = async (data: BookingFormValues) => {
+  const onSubmit = async (data: z.output<typeof bookingSchema>) => {
     setIsSubmitting(true);
     try {
       const booking = await repository.createBooking({

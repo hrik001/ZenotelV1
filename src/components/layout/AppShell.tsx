@@ -102,7 +102,7 @@ export function AppShell() {
         <div className="h-16 flex items-center px-6 border-b border-stone-200">
           <div className="flex items-center gap-2 text-teal-700 font-bold text-xl tracking-tight">
             <Building2 className="w-6 h-6" />
-            <span>Bookzee</span>
+            <span>Zenotel</span>
           </div>
         </div>
         
@@ -211,7 +211,7 @@ export function AppShell() {
             <div className="h-16 flex items-center px-6 border-b border-stone-200">
               <div className="flex items-center gap-2 text-teal-700 font-bold text-xl">
                 <Building2 className="w-6 h-6" />
-                <span>Bookzee</span>
+                <span>Zenotel</span>
               </div>
             </div>
             <div className="flex-1 h-0 overflow-y-auto pt-5 pb-4 px-3 space-y-6">

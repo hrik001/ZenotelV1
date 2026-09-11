@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "Zenotel",
+  "description": "Hospitality property-management SaaS.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }
