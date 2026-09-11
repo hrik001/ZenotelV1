@@ -9,6 +9,18 @@ import { Label } from '../../components/ui/Label';
 import { Building2, Check, ChevronRight } from 'lucide-react';
 import { BusinessType } from '../../types';
 
+
+const getCountryDefaults = (c: string) => {
+  switch (c) {
+    case 'IN': return { timezone: 'Asia/Kolkata', currency: 'INR' };
+    case 'US': return { timezone: 'America/New_York', currency: 'USD' };
+    case 'UK': return { timezone: 'Europe/London', currency: 'GBP' };
+    case 'AU': return { timezone: 'Australia/Sydney', currency: 'AUD' };
+    case 'CA': return { timezone: 'America/Toronto', currency: 'CAD' };
+    default: return { timezone: 'UTC', currency: 'USD' };
+  }
+};
+
 export function OnboardingFlow() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -18,7 +30,9 @@ export function OnboardingFlow() {
   // Form State
   const [businessType, setBusinessType] = useState<BusinessType>('Hotel');
   const [orgName, setOrgName] = useState('');
-  const [country, setCountry] = useState('US');
+  const [country, setCountry] = useState('IN');
+  const [propertyState, setPropertyState] = useState('');
+  const [propertyAddress, setPropertyAddress] = useState('');
   const [propertyName, setPropertyName] = useState('');
   const [propertyCity, setPropertyCity] = useState('');
 
@@ -32,8 +46,8 @@ export function OnboardingFlow() {
         name: orgName,
         business_type: [businessType],
         country,
-        timezone: 'UTC',
-        default_currency: 'USD'
+        timezone: getCountryDefaults(country).timezone,
+        default_currency: getCountryDefaults(country).currency
       }, user.id);
 
       // 2. Create Initial Property
@@ -42,9 +56,11 @@ export function OnboardingFlow() {
         name: propertyName,
         property_type: businessType,
         country,
-        state: '',
+        state: propertyState,
         city: propertyCity,
-        address: '',
+        address: propertyAddress,
+        timezone: getCountryDefaults(country).timezone,
+        currency: getCountryDefaults(country).currency,
       });
 
       navigate('/');
@@ -163,15 +179,37 @@ export function OnboardingFlow() {
                   autoFocus
                 />
               </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="state">State / Province</Label>
+                  <Input 
+                    id="state" 
+                    placeholder="e.g. Maharashtra" 
+                    value={propertyState} 
+                    onChange={e => setPropertyState(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input 
+                    id="city" 
+                    placeholder="e.g. Mumbai" 
+                    value={propertyCity} 
+                    onChange={e => setPropertyCity(e.target.value)}
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
-                <Label htmlFor="city">City / Location</Label>
+                <Label htmlFor="address">Address</Label>
                 <Input 
-                  id="city" 
-                  placeholder="e.g. San Francisco" 
-                  value={propertyCity} 
-                  onChange={e => setPropertyCity(e.target.value)}
+                  id="address" 
+                  placeholder="e.g. 123 Main St" 
+                  value={propertyAddress} 
+                  onChange={e => setPropertyAddress(e.target.value)}
                 />
               </div>
+
             </div>
             <div className="flex justify-between pt-4">
               <Button variant="ghost" onClick={() => setStep(3)}>Back</Button>

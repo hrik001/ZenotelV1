@@ -10,7 +10,8 @@ import { formatCurrency, formatDate } from '../../lib/formatters';
 
 function PaymentStatusBadge({ status }: { status: string }) {
   switch (status) {
-    case 'Completed': return <Badge variant="success">{status}</Badge>;
+    case 'Paid': return <Badge variant="success">{status}</Badge>;
+    case 'Partial': return <Badge variant="warning">{status}</Badge>;
     case 'Pending': return <Badge variant="warning">{status}</Badge>;
     case 'Refunded': return <Badge variant="secondary">{status}</Badge>;
     case 'Failed': return <Badge variant="danger">{status}</Badge>;

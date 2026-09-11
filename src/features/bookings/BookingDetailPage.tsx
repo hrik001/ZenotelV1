@@ -20,10 +20,13 @@ function StatusBadge({ status }: { status: BookingStatus }) {
   }
 }
 
+import { RecordPaymentDialog } from './RecordPaymentDialog';
+
 export function BookingDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { booking, isLoading, error, activeOrg } = useBookingDetailData(id);
+  const [showPaymentModal, setShowPaymentModal] = React.useState(false);
 
   if (isLoading) {
     return <div className="p-8 text-stone-500 text-center animate-pulse">Loading booking details...</div>;
@@ -175,7 +178,7 @@ export function BookingDetailPage() {
                 </div>
                 
                 {balance > 0 && (
-                  <Button className="w-full mt-4">Record Payment</Button>
+                  <Button className="w-full mt-4" onClick={() => setShowPaymentModal(true)}>Record Payment</Button>
                 )}
               </div>
             </CardContent>
@@ -203,6 +206,15 @@ export function BookingDetailPage() {
           )}
         </div>
       </div>
+
+      {showPaymentModal && (
+        <RecordPaymentDialog 
+           bookingId={booking.id} 
+           orgId={activeOrg.id} 
+           onClose={() => setShowPaymentModal(false)}
+           onPaymentAdded={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 }

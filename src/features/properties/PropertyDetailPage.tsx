@@ -159,8 +159,8 @@ export function PropertyDetailPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-stone-700">Phone</label>
                   <input
-                    type="text"
-                    name="phone"
+                  type="tel" pattern="^\\+?[0-9\\s\\-\\(\\)]{7,15}$" title="Please enter a valid phone number"
+                  name="phone"
                     value={formData.phone || ''}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"

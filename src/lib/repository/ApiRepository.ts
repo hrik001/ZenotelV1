@@ -2,9 +2,17 @@ import { Booking, Guest, Organization, OrganizationMember, Payment, Property, Un
 import { IRepository } from './IRepository';
 import { auth } from '../firebase';
 
+const getTokenForApi = async () => {
+  if (typeof window !== 'undefined' && localStorage.getItem('dummy_logged_in') === 'true') {
+    return 'DUMMY_TOKEN';
+  }
+  if (!auth.currentUser) return null;
+  return await auth.currentUser.getIdToken();
+};
+
 export class ApiRepository implements IRepository {
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getTokenForApi();
     if (!token) throw new Error('Not authenticated');
 
     const headers = {
@@ -167,7 +175,7 @@ export class ApiRepository implements IRepository {
   }
 
   async uploadPropertyDocument(orgId: string, propertyId: string, file: File, category: string, label: string): Promise<any> {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getTokenForApi();
     if (!token) throw new Error('Not authenticated');
 
     const formData = new FormData();

@@ -1,11 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '../types';
-import { auth } from '../lib/firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  login: () => Promise<void>;
   logout: () => Promise<void>;
   getToken: () => Promise<string | null>;
 }
@@ -17,47 +16,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          const token = await firebaseUser.getIdToken();
-          const response = await fetch('/api/auth/sync', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          
-          if (!response.ok) {
-            console.error('Failed to sync user with backend');
-            setUser(null);
-          } else {
-            const dbUser = await response.json();
-            setUser(dbUser);
-          }
-        } catch (error) {
-          console.error("Auth sync error", error);
-          setUser(null);
-        }
-      } else {
-        setUser(null);
+    const checkAuth = async () => {
+      const isLogged = localStorage.getItem('dummy_logged_in') === 'true';
+      if (isLogged) {
+         try {
+           const response = await fetch('/api/auth/sync', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer DUMMY_TOKEN` }
+           });
+           if (response.ok) {
+             const dbUser = await response.json();
+             setUser(dbUser);
+           } else {
+             setUser(null);
+             localStorage.removeItem('dummy_logged_in');
+           }
+         } catch(e) {
+           setUser(null);
+         }
       }
       setIsLoading(false);
-    });
-
-    return () => unsubscribe();
+    };
+    checkAuth();
   }, []);
 
+  const login = async () => {
+    localStorage.setItem('dummy_logged_in', 'true');
+    setUser({ id: 'dummy-user-id', email: 'test@example.com', name: 'Test User', created_at: '' });
+  };
+
   const logout = async () => {
-    await signOut(auth);
+    localStorage.removeItem('dummy_logged_in');
     setUser(null);
   };
 
   const getToken = async () => {
-    if (!auth.currentUser) return null;
-    return await auth.currentUser.getIdToken();
+    if (localStorage.getItem('dummy_logged_in') === 'true') {
+      return 'DUMMY_TOKEN';
+    }
+    return null;
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, logout, getToken }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, getToken }}>
       {children}
     </AuthContext.Provider>
   );

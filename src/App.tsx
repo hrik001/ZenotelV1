@@ -29,13 +29,7 @@ import { ReportsPage } from './features/reports/ReportsPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { TeamPage } from './features/team/TeamPage';
 
-// Placeholder pages for operational routes
-const PlaceholderPage = ({ title }: { title: string }) => (
-  <div className="p-8">
-    <h1 className="text-2xl font-bold text-stone-900">{title}</h1>
-    <p className="text-stone-500 mt-2">This feature is under development.</p>
-  </div>
-);
+// Removed placeholder page
 
 function App() {
   return (

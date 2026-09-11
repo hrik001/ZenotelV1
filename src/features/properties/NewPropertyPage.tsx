@@ -160,7 +160,7 @@ export function NewPropertyPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-stone-700">Phone</label>
                 <input
-                  type="text"
+                  type="tel" pattern="^\\+?[0-9\\s\\-\\(\\)]{7,15}$" title="Please enter a valid phone number"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}

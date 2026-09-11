@@ -518,11 +518,16 @@ apiRouter.get('/payments', async (req: AuthRequest, res) => {
       }
       conditions.push(eq(payments.booking_id, bookingId));
     } else if (membership.role !== 'Owner') {
-      // It's a bit complex to filter payments by property if we don't have property_id on payments
-      // For now, let's just use org level access, or if they want to see all payments, they need to be an Owner?
-      // Wait, payments belong to bookings, which belong to properties. If the user isn't Owner, we would need to join.
-      // Since it's MVP, if no bookingId is provided and they aren't owner, return error or join. Let's return error to enforce they ask for specific booking.
-      return res.status(403).json({ error: 'Must provide bookingId to view payments as non-Owner' });
+      if (!membership.property_ids || membership.property_ids.length === 0) {
+        return res.json([]);
+      }
+      const allowedBookings = await db.query.bookings.findMany({
+        where: inArray(bookings.property_id, membership.property_ids),
+        columns: { id: true }
+      });
+      const allowedBookingIds = allowedBookings.map(b => b.id);
+      if (allowedBookingIds.length === 0) return res.json([]);
+      conditions.push(inArray(payments.booking_id, allowedBookingIds));
     }
     
     const result = await db.query.payments.findMany({
@@ -619,6 +624,14 @@ apiRouter.get('/properties/:propertyId/documents', async (req: AuthRequest, res)
     const propertyId = req.params.propertyId as string;
     const orgId = req.query.orgId as string;
     
+    if (propertyId === 'all') {
+      await verifyOrgAccess(req.user!.uid, orgId);
+      const docs = await db.query.propertyDocuments.findMany({
+        where: eq(propertyDocuments.organization_id, orgId)
+      });
+      return res.json(docs);
+    }
+
     await verifyPropertyAccess(req.user!.uid, orgId, propertyId);
     
     const docs = await db.query.propertyDocuments.findMany({
@@ -640,6 +653,25 @@ apiRouter.get('/properties/:propertyId/documents/:docId/download', async (req: A
     const docId = req.params.docId as string;
     const orgId = req.query.orgId as string;
     
+    if (propertyId === 'all') {
+      await verifyOrgAccess(req.user!.uid, orgId);
+      
+      const doc = await db.query.propertyDocuments.findFirst({
+        where: and(eq(propertyDocuments.id, docId), eq(propertyDocuments.organization_id, orgId))
+      });
+      
+      if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+      const file = getBucket().file(doc.file_ref);
+      const [url] = await file.getSignedUrl({
+        version: 'v4',
+        action: 'read',
+        expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+      });
+
+      return res.json({ url });
+    }
+
     await verifyPropertyAccess(req.user!.uid, orgId, propertyId);
     
     const doc = await db.query.propertyDocuments.findFirst({
