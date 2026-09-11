@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { db } from '../db';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, lt, gt, or, not, isNull } from 'drizzle-orm';
 import {
   users,
   organizations,
@@ -10,12 +10,43 @@ import {
   units,
   guests,
   bookings,
-  payments
+  payments,
+  auditLogs,
+  propertyDocuments,
+  organizationDocuments
 } from '../db/schema';
 
 export const apiRouter = Router();
 
 apiRouter.use(requireAuth);
+
+const logAudit = async (
+  orgId: string,
+  actorId: string,
+  actorName: string,
+  action: string,
+  entityType: string,
+  entityId: string,
+  summary: string,
+  propertyId?: string,
+  metadata?: any
+) => {
+  try {
+    await db.insert(auditLogs).values({
+      organization_id: orgId,
+      actor_user_id: actorId,
+      actor_name: actorName,
+      action,
+      entity_type: entityType,
+      entity_id: entityId,
+      summary,
+      property_id: propertyId || null,
+      metadata: metadata || null,
+    });
+  } catch (err) {
+    console.error('Audit log failed:', err);
+  }
+};
 
 // Helper to check basic org access
 const verifyOrgAccess = async (userId: string, orgId: string) => {
@@ -158,6 +189,16 @@ apiRouter.post('/organizations/:orgId/members', async (req: AuthRequest, res) =>
       status: 'Active'
     }).returning();
     
+    await logAudit(
+      orgId,
+      req.user!.uid,
+      req.user!.name || req.user!.email || 'System',
+      'INVITED',
+      'OrganizationMember',
+      member.id,
+      `Invited user ${email} as ${role}`
+    );
+    
     res.json(member);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -191,7 +232,7 @@ apiRouter.get('/properties', async (req: AuthRequest, res) => {
     const orgId = req.query.orgId as string;
     const membership = await verifyOrgAccess(req.user!.uid, orgId);
     
-    let conditions = [eq(properties.organization_id, orgId)];
+    let conditions = [eq(properties.organization_id, orgId), isNull(properties.archived_at)];
     if (membership.role !== 'Owner') {
       if (!membership.property_ids || membership.property_ids.length === 0) {
         return res.json([]);
@@ -212,6 +253,16 @@ apiRouter.post('/properties', async (req: AuthRequest, res) => {
   try {
     await verifyOwnerAccess(req.user!.uid, req.body.organization_id);
     const [property] = await db.insert(properties).values(req.body).returning();
+    await logAudit(
+      req.body.organization_id,
+      req.user!.uid,
+      req.user!.name || req.user!.email || 'System',
+      'CREATED',
+      'Property',
+      property.id,
+      `Created property ${property.name}`,
+      property.id
+    );
     res.json(property);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -223,6 +274,16 @@ apiRouter.put('/properties/:id', async (req: AuthRequest, res) => {
     await verifyOwnerAccess(req.user!.uid, req.body.organization_id);
     const id = req.params.id as string;
     const [property] = await db.update(properties).set(req.body).where(eq(properties.id, id)).returning();
+    await logAudit(
+      req.body.organization_id,
+      req.user!.uid,
+      req.user!.name || req.user!.email || 'System',
+      'UPDATED',
+      'Property',
+      property.id,
+      `Updated property ${property.name}`,
+      property.id
+    );
     res.json(property);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -235,7 +296,7 @@ apiRouter.get('/units', async (req: AuthRequest, res) => {
     const propertyId = req.query.propertyId as string;
     const orgId = req.query.orgId as string;
     
-    let conditions = [];
+    let conditions = [isNull(units.archived_at)];
     if (propertyId) {
       // Get the property to check org access
       const property = await db.query.properties.findFirst({ where: eq(properties.id, propertyId) });
@@ -292,7 +353,7 @@ apiRouter.get('/guests', async (req: AuthRequest, res) => {
     const orgId = req.query.orgId as string;
     await verifyOrgAccess(req.user!.uid, orgId);
     const result = await db.query.guests.findMany({
-      where: eq(guests.organization_id, orgId)
+      where: and(eq(guests.organization_id, orgId), isNull(guests.archived_at))
     });
     res.json(result);
   } catch (error: any) {
@@ -328,7 +389,7 @@ apiRouter.get('/bookings', async (req: AuthRequest, res) => {
     const propertyId = req.query.propertyId as string;
     const membership = await verifyOrgAccess(req.user!.uid, orgId);
     
-    let conditions = [eq(bookings.organization_id, orgId)];
+    let conditions = [eq(bookings.organization_id, orgId), isNull(bookings.archived_at)];
     if (propertyId) {
       await verifyPropertyAccess(req.user!.uid, orgId, propertyId);
       conditions.push(eq(bookings.property_id, propertyId));
@@ -351,11 +412,40 @@ apiRouter.get('/bookings', async (req: AuthRequest, res) => {
 apiRouter.post('/bookings', async (req: AuthRequest, res) => {
   try {
     await verifyPropertyAccess(req.user!.uid, req.body.organization_id, req.body.property_id);
+    
+    // Check overlap
+    const checkInStr = req.body.check_in;
+    const checkOutStr = req.body.check_out;
+    const overlaps = await db.query.bookings.findMany({
+      where: and(
+        eq(bookings.unit_id, req.body.unit_id),
+        not(inArray(bookings.status, ['Cancelled', 'No Show'])),
+        lt(bookings.check_in, checkOutStr),
+        gt(bookings.check_out, checkInStr)
+      )
+    });
+    
+    if (overlaps.length > 0) {
+      return res.status(409).json({ error: 'This unit is already booked for these dates' });
+    }
+
     const [booking] = await db.insert(bookings).values({
       ...req.body,
-      check_in: req.body.check_in,
-      check_out: req.body.check_out,
+      check_in: checkInStr,
+      check_out: checkOutStr,
     }).returning();
+    
+    await logAudit(
+      req.body.organization_id,
+      req.user!.uid,
+      req.user!.name || req.user!.email || 'System',
+      'CREATED',
+      'Booking',
+      booking.id,
+      `Created booking for ${booking.check_in}`,
+      req.body.property_id
+    );
+    
     res.json(booking);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -369,11 +459,44 @@ apiRouter.put('/bookings/:id', async (req: AuthRequest, res) => {
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
     
     await verifyPropertyAccess(req.user!.uid, booking.organization_id, booking.property_id);
+    
+    const checkInStr = req.body.check_in || booking.check_in;
+    const checkOutStr = req.body.check_out || booking.check_out;
+    
+    // Check overlap if dates or unit changed
+    if (req.body.check_in || req.body.check_out || req.body.unit_id) {
+      const targetUnitId = req.body.unit_id || booking.unit_id;
+      const overlaps = await db.query.bookings.findMany({
+        where: and(
+          eq(bookings.unit_id, targetUnitId),
+          not(eq(bookings.id, id)),
+          not(inArray(bookings.status, ['Cancelled', 'No Show'])),
+          lt(bookings.check_in, checkOutStr),
+          gt(bookings.check_out, checkInStr)
+        )
+      });
+      if (overlaps.length > 0) {
+        return res.status(409).json({ error: 'This unit is already booked for these dates' });
+      }
+    }
+
     const [updatedBooking] = await db.update(bookings).set({
       ...req.body,
-      check_in: req.body.check_in,
-      check_out: req.body.check_out,
+      check_in: req.body.check_in ? req.body.check_in : undefined,
+      check_out: req.body.check_out ? req.body.check_out : undefined,
     }).where(eq(bookings.id, id)).returning();
+    
+    await logAudit(
+      booking.organization_id,
+      req.user!.uid,
+      req.user!.name || req.user!.email || 'System',
+      'UPDATED',
+      'Booking',
+      booking.id,
+      `Updated booking ${booking.id}`,
+      booking.property_id
+    );
+    
     res.json(updatedBooking);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -421,7 +544,118 @@ apiRouter.post('/payments', async (req: AuthRequest, res) => {
       ...req.body,
       date: new Date(req.body.date)
     }).returning();
+    
+    await logAudit(
+      req.body.organization_id,
+      req.user!.uid,
+      req.user!.name || req.user!.email || 'System',
+      'CREATED',
+      'Payment',
+      payment.id,
+      `Recorded payment of ${payment.amount}`,
+      booking.property_id
+    );
+    
     res.json(payment);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+import multer from 'multer';
+import { adminStorage } from '../lib/firebase-admin';
+import { v4 as uuidv4 } from 'uuid';
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+});
+
+const getBucket = () => adminStorage.bucket();
+
+apiRouter.post('/properties/:propertyId/documents', upload.single('file'), async (req: AuthRequest, res) => {
+  try {
+    const propertyId = req.params.propertyId as string;
+    const orgId = req.body.organization_id as string;
+    const { category, label } = req.body;
+    
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const membership = await verifyPropertyAccess(req.user!.uid, orgId, propertyId);
+    if (membership.role !== 'Owner' && membership.role !== 'Manager') {
+       return res.status(403).json({ error: 'Only Owners and Managers can upload documents' });
+    }
+
+    const fileExt = req.file.originalname.split('.').pop();
+    const filePath = `documents/${orgId}/properties/${propertyId}/${uuidv4()}.${fileExt}`;
+    
+    const file = getBucket().file(filePath);
+    await file.save(req.file.buffer, {
+      contentType: req.file.mimetype,
+      metadata: { originalName: req.file.originalname }
+    });
+
+    const [doc] = await db.insert(propertyDocuments).values({
+      organization_id: orgId,
+      property_id: propertyId,
+      category,
+      label,
+      file_ref: filePath,
+      uploaded_by: req.user!.uid,
+      file_size: req.file.size,
+      mime_type: req.file.mimetype,
+    }).returning();
+
+    await logAudit(orgId, req.user!.uid, req.user!.name || 'System', 'UPLOADED', 'PropertyDocument', doc.id, `Uploaded document ${label}`, propertyId);
+
+    res.json(doc);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+apiRouter.get('/properties/:propertyId/documents', async (req: AuthRequest, res) => {
+  try {
+    const propertyId = req.params.propertyId as string;
+    const orgId = req.query.orgId as string;
+    
+    await verifyPropertyAccess(req.user!.uid, orgId, propertyId);
+    
+    const docs = await db.query.propertyDocuments.findMany({
+      where: and(
+        eq(propertyDocuments.property_id, propertyId),
+        eq(propertyDocuments.organization_id, orgId)
+      )
+    });
+    
+    res.json(docs);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+apiRouter.get('/properties/:propertyId/documents/:docId/download', async (req: AuthRequest, res) => {
+  try {
+    const propertyId = req.params.propertyId as string;
+    const docId = req.params.docId as string;
+    const orgId = req.query.orgId as string;
+    
+    await verifyPropertyAccess(req.user!.uid, orgId, propertyId);
+    
+    const doc = await db.query.propertyDocuments.findFirst({
+      where: and(eq(propertyDocuments.id, docId), eq(propertyDocuments.property_id, propertyId))
+    });
+    
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+    const file = getBucket().file(doc.file_ref);
+    const [url] = await file.getSignedUrl({
+      version: 'v4',
+      action: 'read',
+      expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+    });
+
+    res.json({ url });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

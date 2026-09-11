@@ -160,4 +160,38 @@ export class ApiRepository implements IRepository {
       body: JSON.stringify(data)
     });
   }
+
+  // Documents
+  async getPropertyDocuments(orgId: string, propertyId: string): Promise<any[]> {
+    return this.fetchWithAuth(`/properties/${propertyId}/documents?orgId=${orgId}`);
+  }
+
+  async uploadPropertyDocument(orgId: string, propertyId: string, file: File, category: string, label: string): Promise<any> {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('Not authenticated');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('organization_id', orgId);
+    formData.append('category', category);
+    formData.append('label', label);
+
+    const response = await fetch(`/api/properties/${propertyId}/documents`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`API Error: ${response.status} - ${err}`);
+    }
+    return response.json();
+  }
+
+  async downloadPropertyDocument(orgId: string, propertyId: string, docId: string): Promise<{ url: string }> {
+    return this.fetchWithAuth(`/properties/${propertyId}/documents/${docId}/download?orgId=${orgId}`);
+  }
 }

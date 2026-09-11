@@ -19,7 +19,10 @@ import { PropertyDetailPage } from './features/properties/PropertyDetailPage';
 import { UnitsPage } from './features/units/UnitsPage';
 import { NewUnitPage } from './features/units/NewUnitPage';
 import { UnitDetailPage } from './features/units/UnitDetailPage';
+import { DocumentsPage } from './features/documents/DocumentsPage';
 import { GuestsPage } from './features/guests/GuestsPage';
+import { NewGuestPage } from './features/guests/NewGuestPage';
+import { GuestDetailPage } from './features/guests/GuestDetailPage';
 import { PaymentsPage } from './features/payments/PaymentsPage';
 
 import { ReportsPage } from './features/reports/ReportsPage';
@@ -54,8 +57,8 @@ function App() {
             <Route path="/bookings/:id" element={<BookingDetailPage />} />
 
             <Route path="/guests" element={<GuestsPage />} />
-            <Route path="/guests/new" element={<PlaceholderPage title="Add Guest" />} />
-            <Route path="/guests/:id" element={<PlaceholderPage title="Guest Profile" />} />
+            <Route path="/guests/new" element={<NewGuestPage />} />
+            <Route path="/guests/:id" element={<GuestDetailPage />} />
             
             {/* Portfolio Management */}
             <Route path="/properties" element={<PropertiesPage />} />
@@ -65,6 +68,8 @@ function App() {
             <Route path="/units" element={<UnitsPage />} />
             <Route path="/units/new" element={<NewUnitPage />} />
             <Route path="/units/:id" element={<UnitDetailPage />} />
+            
+            <Route path="/documents" element={<DocumentsPage />} />
             
             <Route path="/payments" element={<PaymentsPage />} />
             <Route path="/reports" element={<ReportsPage />} />

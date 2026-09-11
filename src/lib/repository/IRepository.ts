@@ -36,4 +36,9 @@ export interface IRepository {
   // Payments
   getPayments(orgId: string, bookingId?: string): Promise<Payment[]>;
   createPayment(data: Partial<Payment>): Promise<Payment>;
+
+  // Documents
+  getPropertyDocuments?(orgId: string, propertyId: string): Promise<any[]>;
+  uploadPropertyDocument?(orgId: string, propertyId: string, file: File, category: string, label: string): Promise<any>;
+  downloadPropertyDocument?(orgId: string, propertyId: string, docId: string): Promise<{ url: string }>;
 }

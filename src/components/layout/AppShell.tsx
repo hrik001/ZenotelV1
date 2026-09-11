@@ -17,7 +17,8 @@ import {
   Menu,
   X,
   LogOut,
-  Building
+  Building,
+  FileText
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/Button';
@@ -76,6 +77,7 @@ export function AppShell() {
       items: [
         { name: 'Properties', to: '/properties', icon: Building2 },
         { name: 'Units / Rooms', to: '/units', icon: Building },
+        { name: 'Documents', to: '/documents', icon: FileText },
       ]
     },
     {
@@ -162,6 +164,29 @@ export function AppShell() {
             >
               <Menu className="w-6 h-6" />
             </button>
+            
+            {/* Organization Switcher */}
+            {organizations.length > 1 && (
+              <div className="relative flex items-center mr-2">
+                <select
+                  className="appearance-none bg-stone-100 border-none text-stone-900 text-sm font-medium rounded-md pl-3 pr-8 py-2 focus:ring-2 focus:ring-teal-600 focus:outline-none max-w-[150px] truncate"
+                  value={activeOrg?.id || ''}
+                  onChange={async (e) => {
+                    const org = organizations.find(o => o.id === e.target.value);
+                    if (org) {
+                      setActiveOrg(org);
+                      setActivePropertyId('all');
+                      const props = await repository.getProperties(org.id);
+                      setProperties(props);
+                    }
+                  }}
+                >
+                  {organizations.map(o => (
+                    <option key={o.id} value={o.id}>{o.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             
             {/* Property Switcher */}
             <div className="relative flex items-center">
