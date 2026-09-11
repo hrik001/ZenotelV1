@@ -78,10 +78,10 @@ export class ApiRepository implements IRepository {
     });
   }
 
-  async updateProperty(id: string, data: Partial<Property>): Promise<Property> {
+  async updateProperty(orgId: string, id: string, data: Partial<Property>): Promise<Property> {
     return this.fetchWithAuth(`/properties/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: JSON.stringify({ ...data, organization_id: orgId })
     });
   }
 

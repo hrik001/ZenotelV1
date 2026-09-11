@@ -16,7 +16,7 @@ export interface IRepository {
   // Properties
   getProperties(orgId: string): Promise<Property[]>;
   createProperty(data: Partial<Property>): Promise<Property>;
-  updateProperty(id: string, data: Partial<Property>): Promise<Property>;
+  updateProperty(orgId: string, id: string, data: Partial<Property>): Promise<Property>;
 
   // Units
   getUnits(propertyId: string): Promise<Unit[]>;
