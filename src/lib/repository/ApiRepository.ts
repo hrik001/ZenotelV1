@@ -52,6 +52,20 @@ export class ApiRepository implements IRepository {
     return this.fetchWithAuth(`/organizations/${orgId}/members`);
   }
 
+  async inviteOrganizationMember(orgId: string, email: string, role: string, property_ids: string[]): Promise<OrganizationMember> {
+    return this.fetchWithAuth(`/organizations/${orgId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ email, role, property_ids })
+    });
+  }
+
+  async updateOrganizationMember(orgId: string, id: string, data: Partial<OrganizationMember>): Promise<OrganizationMember> {
+    return this.fetchWithAuth(`/organizations/${orgId}/members/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
   // Properties
   async getProperties(orgId: string): Promise<Property[]> {
     return this.fetchWithAuth(`/properties?orgId=${orgId}`);

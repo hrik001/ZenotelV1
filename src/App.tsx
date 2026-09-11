@@ -20,6 +20,7 @@ import { PaymentsPage } from './features/payments/PaymentsPage';
 
 import { ReportsPage } from './features/reports/ReportsPage';
 import { SettingsPage } from './features/settings/SettingsPage';
+import { TeamPage } from './features/team/TeamPage';
 
 // Placeholder pages for operational routes
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -64,6 +65,7 @@ function App() {
             <Route path="/payments" element={<PaymentsPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/team" element={<TeamPage />} />
           </Route>
         </Route>
 

@@ -10,6 +10,8 @@ export interface IRepository {
   createOrganization(data: Partial<Organization>, userId: string): Promise<Organization>;
   getOrganizations(userId: string): Promise<Organization[]>;
   getOrganizationMembers(orgId: string): Promise<OrganizationMember[]>;
+  inviteOrganizationMember?(orgId: string, email: string, role: string, property_ids: string[]): Promise<OrganizationMember>;
+  updateOrganizationMember?(orgId: string, id: string, data: Partial<OrganizationMember>): Promise<OrganizationMember>;
 
   // Properties
   getProperties(orgId: string): Promise<Property[]>;

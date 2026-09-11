@@ -88,6 +88,7 @@ export function AppShell() {
     {
       title: 'MANAGEMENT',
       items: [
+        { name: 'Team', to: '/team', icon: Users },
         { name: 'Settings', to: '/settings', icon: Settings },
       ]
     }

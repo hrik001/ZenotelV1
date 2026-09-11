@@ -1,5 +1,6 @@
 export type BusinessType = 'Hotel' | 'Hostel' | 'Dormitory' | 'Homestay' | 'Resort' | 'Boutique' | 'Guesthouse' | 'Other';
-export type Role = 'Owner' | 'Staff';
+export type Role = 'Owner' | 'Manager' | 'Staff';
+export type MemberStatus = 'Invited' | 'Active' | 'Removed';
 export type BookingStatus = 'Pending' | 'Confirmed' | 'Checked In' | 'Checked Out' | 'Cancelled' | 'No Show';
 export type PaymentStatus = 'Pending' | 'Partial' | 'Paid' | 'Refunded';
 export type UnitStatus = 'Available' | 'Occupied' | 'Maintenance' | 'Inactive';
@@ -28,7 +29,10 @@ export interface OrganizationMember {
   organization_id: string;
   user_id: string;
   role: Role;
+  status: MemberStatus;
+  property_ids: string[];
   created_at: string;
+  user?: User; // added from JOIN
 }
 
 export interface Property {
