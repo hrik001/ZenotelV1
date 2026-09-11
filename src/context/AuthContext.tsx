@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '../types';
-import { repository } from '../lib/repository';
+import { auth } from '../lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string) => Promise<void>;
   logout: () => Promise<void>;
+  getToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,31 +17,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const currentUser = await repository.getCurrentUser();
-        setUser(currentUser);
-      } catch (error) {
-        console.error("Failed to restore session", error);
-      } finally {
-        setIsLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const token = await firebaseUser.getIdToken();
+          const response = await fetch('/api/auth/sync', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (!response.ok) {
+            console.error('Failed to sync user with backend');
+            setUser(null);
+          } else {
+            const dbUser = await response.json();
+            setUser(dbUser);
+          }
+        } catch (error) {
+          console.error("Auth sync error", error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
       }
-    };
-    initAuth();
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const login = async (email: string) => {
-    const loggedInUser = await repository.login(email);
-    setUser(loggedInUser);
-  };
-
   const logout = async () => {
-    await repository.logout();
+    await signOut(auth);
     setUser(null);
   };
 
+  const getToken = async () => {
+    if (!auth.currentUser) return null;
+    return await auth.currentUser.getIdToken();
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, logout, getToken }}>
       {children}
     </AuthContext.Provider>
   );

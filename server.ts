@@ -16,13 +16,8 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  app.get("/api/me", requireAuth, async (req: AuthRequest, res) => {
-    try {
-      res.json({ user: req.user });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  const { apiRouter } = await import("./src/api/routes.ts");
+  app.use("/api", apiRouter);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
